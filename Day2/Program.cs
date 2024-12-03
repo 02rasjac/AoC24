@@ -15,38 +15,34 @@ var nSafeReports = data.Count(report => IsSafeReportDampened(report.Split(' ').S
 Console.WriteLine($"N-safe reports: {nSafeReports}");
 return;
 
-// Returns `-1` if safe, otherwise the index where the error is
-int IsSafeReport(List<int> report)
+bool IsSafeReport(List<int> report)
 {
     var isIncreasing = report[0] < report[1];
 
-    if (report[1] < report[2] && !isIncreasing) return 0; // The first index may be removable
+    if (report[1] < report[2] && !isIncreasing) return false; // The first index may be removable
 
     for (var i = 0; i < report.Count - 1; i++)
     {
         var diff = Math.Abs(report[i] - report[i + 1]);
-        if (diff is > 3 or 0) return i; // Too big of a difference or the same
-        if (report[i] < report[i + 1] && !isIncreasing) return i; // Increases, but supposed to decrease
-        if (report[i] > report[i + 1] && isIncreasing) return i; // Decreases, but supposed to increase
+        if (diff is > 3 or 0) return false; // Too big of a difference or the same
+        if (report[i] < report[i + 1] && !isIncreasing) return false; // Increases, but supposed to decrease
+        if (report[i] > report[i + 1] && isIncreasing) return false; // Decreases, but supposed to increase
     }
 
-    return -1;
+    return true;
 }
 
 bool IsSafeReportDampened(List<int> report)
 {
-    var i = IsSafeReport(report);
-    if (i < 0) return true;
+    var safe = IsSafeReport(report);
+    if (safe) return true;
 
-    var removedFirst = new List<int>(report);
-    removedFirst.RemoveAt(i);
-    if (IsSafeReport(removedFirst) < 0) return true;
-
-    var removedSecond = new List<int>(report);
-    removedSecond.RemoveAt(i + 1);
-    if (IsSafeReport(removedSecond) < 0) return true;
-
-    Console.WriteLine($"Unsafe: {string.Join(" ", report)}");
+    for (var i = 0; i < report.Count; i++)
+    {
+        var cut = new List<int>(report);
+        cut.RemoveAt(i);
+        if (IsSafeReport(cut)) return true;
+    }
 
     return false;
 }
