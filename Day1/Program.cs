@@ -30,12 +30,37 @@ for (var i = 0; i < data.Count; i++)
 Array.Sort(leftList);
 Array.Sort(rightList);
 
-var diff = new int[data.Count];
-var sumDiff = 0;
-for (var i = 0; i < leftList.Length; i++)
+// Part 1
+// var diff = new int[data.Count];
+// var sumDiff = 0;
+// for (var i = 0; i < leftList.Length; i++)
+// {
+//     diff[i] = Math.Abs(leftList[i] - rightList[i]);
+//     sumDiff += diff[i];
+// }
+//
+// Console.WriteLine(sumDiff);
+
+// Part 2
+var index = 0;
+var result = 0;
+while (index < leftList.Length)
 {
-    diff[i] = Math.Abs(leftList[i] - rightList[i]);
-    sumDiff += diff[i];
+    var leftValue = leftList[index];
+
+    // Count number of value in the right list
+    var countRight = rightList.Count(value => value == leftValue);
+
+    // Count number of duplicates in left list
+    var countLeft = 0;
+    while (index < leftList.Length && leftList[index] == leftValue)
+    {
+        ++countLeft;
+        ++index;
+    }
+
+    result += leftValue * countLeft * countRight;
 }
 
-Console.WriteLine(sumDiff);
+// Ans 2: 22776016
+Console.WriteLine(result);
