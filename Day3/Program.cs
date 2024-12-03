@@ -11,13 +11,29 @@ const string path = "data.txt";
 var data = File.ReadAllText(path);
 
 var res = 0;
+var enabled = true;
 
-var match = Regex.Match(data, @"mul\(\d{1,3},\d{1,3}\)");
+var match = Regex.Match(data, @"mul\(\d{1,3},\d{1,3}\)|don't\(\)|do\(\)");
 while (match.Success)
 {
-    var numbers = Regex.Matches(match.Value, @"(\d{1,3})");
-    res += int.Parse(numbers[0].Value) * int.Parse(numbers[1].Value);
+    var matchValue = match.Value;
     match = match.NextMatch();
+    if (matchValue.Equals("don't()"))
+    {
+        enabled = false;
+        continue;
+    }
+
+    if (matchValue.Equals("do()"))
+    {
+        enabled = true;
+        continue;
+    }
+
+    if (!enabled) continue;
+
+    var numbers = Regex.Matches(matchValue, @"(\d{1,3})");
+    res += int.Parse(numbers[0].Value) * int.Parse(numbers[1].Value);
 }
 
 Console.WriteLine(res);
