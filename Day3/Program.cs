@@ -13,10 +13,11 @@ var data = File.ReadAllText(path);
 var res = 0;
 var enabled = true;
 
-var match = Regex.Match(data, @"mul\(\d{1,3},\d{1,3}\)|don't\(\)|do\(\)");
+var match = Regex.Match(data, @"mul\((\d{1,3}),(\d{1,3})\)|don't\(\)|do\(\)");
 while (match.Success)
 {
     var matchValue = match.Value;
+    var oldMatch = match;
     match = match.NextMatch();
     if (matchValue.Equals("don't()"))
     {
@@ -32,8 +33,8 @@ while (match.Success)
 
     if (!enabled) continue;
 
-    var numbers = Regex.Matches(matchValue, @"(\d{1,3})");
-    res += int.Parse(numbers[0].Value) * int.Parse(numbers[1].Value);
+    res += int.Parse(oldMatch.Groups[1].Value) * int.Parse(oldMatch.Groups[2].Value);
 }
 
+// ans: 98729041
 Console.WriteLine(res);
