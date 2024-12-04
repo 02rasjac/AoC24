@@ -14,6 +14,8 @@ int nLines = data.Length;
 
 var nMatches = 0;
 
+#region Part 1
+
 // Regex for horizontal (forwards and backwards)
 nMatches = data.Sum(line => Regex.Matches(line, @"XMAS").Count + Regex.Matches(line, "SAMX").Count); // 5 for sample
 
@@ -47,4 +49,47 @@ for (var j = 3; j < lineLength; j++)
         nMatches++;
 }
 
+#endregion
+
+nMatches = 0;
+for (var i = 0; i < nLines - 3; i++)
+for (var j = 0; j < lineLength - 3; j++)
+{
+    // X
+    // string right = string.Concat(data[i][j], data[i + 1][j + 1], data[i + 2][j + 2]);
+    // string left = string.Concat(data[i][j + 2], data[i + 1][j + 1], data[i + 2][j]);
+    // if (right is "MAS" or "SAM" && left is "MAS" or "SAM") nMatches++;
+
+    // If there is an A or X in the corners or not an A in the center, it's invalid
+    // A.A
+    // .B.
+    // X.A
+    if (data[i + 1][j + 1] != 'A' || data[i][j] is 'A' or 'X' || data[i + 2][j] is 'A' or 'X' ||
+        data[i][j + 2] is 'A' or 'X' ||
+        data[i + 2][j + 2] is 'A' or 'X')
+        continue;
+
+    // If the diagonal corners are the same, it's not equal
+    // M.S
+    // .A.
+    // S.M
+    if (data[i][j] == data[i + 2][j + 2] || data[i][j + 2] == data[i + 2][j])
+        continue;
+
+    // Now, it should only be a version of
+    // M.S
+    // .A.
+    // M.S
+    nMatches++;
+
+
+    // // +
+    // string vertical = string.Concat(data[i][j + 1], data[i + 1][j + 1], data[i + 2][j + 1]);
+    // string horizontal = string.Concat(data[i + 1][j], data[i + 1][j + 1], data[i + 1][j + 2]);
+    // if (vertical is "MAS" or "SAM" && horizontal is "MAS" or "SAM")
+    //     nMatches++;
+}
+
 Console.WriteLine(nMatches);
+// 1833 low
+// 
