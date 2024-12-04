@@ -52,8 +52,8 @@ for (var j = 3; j < lineLength; j++)
 #endregion
 
 nMatches = 0;
-for (var i = 0; i < nLines - 3; i++)
-for (var j = 0; j < lineLength - 3; j++)
+for (var i = 1; i < nLines - 1; i++)
+for (var j = 1; j < lineLength - 1; j++)
 {
     // X
     // string right = string.Concat(data[i][j], data[i + 1][j + 1], data[i + 2][j + 2]);
@@ -64,16 +64,16 @@ for (var j = 0; j < lineLength - 3; j++)
     // A.A
     // .B.
     // X.A
-    if (data[i + 1][j + 1] != 'A' || data[i][j] is 'A' or 'X' || data[i + 2][j] is 'A' or 'X' ||
-        data[i][j + 2] is 'A' or 'X' ||
-        data[i + 2][j + 2] is 'A' or 'X')
+    if (data[i][j] != 'A' || data[i - 1][j - 1] is 'A' or 'X' || data[i + 1][j - 1] is 'A' or 'X' ||
+        data[i + 1][j + 1] is 'A' or 'X' ||
+        data[i - 1][j + 1] is 'A' or 'X')
         continue;
 
     // If the diagonal corners are the same, it's not equal
     // M.S
     // .A.
     // S.M
-    if (data[i][j] == data[i + 2][j + 2] || data[i][j + 2] == data[i + 2][j])
+    if (data[i - 1][j - 1] == data[i + 1][j + 1] || data[i - 1][j + 1] == data[i + 1][j - 1])
         continue;
 
     // Now, it should only be a version of
@@ -92,4 +92,4 @@ for (var j = 0; j < lineLength - 3; j++)
 
 Console.WriteLine(nMatches);
 // 1833 low
-// 
+// 1850 Ans
