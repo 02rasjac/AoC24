@@ -11,6 +11,7 @@ const string path = "data.txt";
 // string[] data = File.ReadAllLines(path);
 var order = new Dictionary<int, List<int>>();
 var validUpdates = new List<List<int>>();
+var inValidUpdates = new List<List<int>>();
 
 var readingOrder = true;
 
@@ -25,11 +26,50 @@ foreach (string line in File.ReadLines(path))
     if (readingOrder)
         ReadOrder(line);
     else
-        AddIfValid(line);
+        AddInLists(line);
 }
 
-int sum = validUpdates.Sum(update => update[update.Count / 2]);
-Console.WriteLine(sum);
+// Part 1
+int sum1 = validUpdates.Sum(update => update[update.Count / 2]);
+Console.WriteLine($"Part 1: {sum1}");
+
+// Part 2
+var sum2 = 0;
+foreach (var update in inValidUpdates)
+{
+    // Start with the first page
+    // If it's behind one it needs to be infront of, switch their places
+    for (var i = 0; i < update.Count; i++)
+    {
+        int currPage = update[i];
+        order.TryGetValue(currPage, out var pagesRequiredAfter);
+        if (pagesRequiredAfter == null)
+            continue;
+
+        foreach (int page in pagesRequiredAfter)
+        {
+            int pageIndex = update.IndexOf(page);
+            // Doesn't exist or The page is after the current page, which it should
+            if (pageIndex < 0 || pageIndex > i)
+                continue;
+
+            // Switch places
+            update[i] = page;
+            update[pageIndex] = currPage;
+
+            // Restart
+            // TODO: figure out how to not restart completely to optimise
+            i = 0;
+            break;
+        }
+    }
+
+    sum2 += update[update.Count / 2];
+}
+
+Console.WriteLine($"Part 2: {sum2}");
+
+
 return;
 
 // Part 1: 4766
@@ -47,7 +87,7 @@ void ReadOrder(string line)
         order.Add(firstPage, [secondPage]);
 }
 
-void AddIfValid(string line)
+void AddInLists(string line)
 {
     var pages = line.Split(',').Select(int.Parse).ToList();
 
@@ -56,12 +96,14 @@ void AddIfValid(string line)
             foreach (int pageAgain in pages)
             {
                 if (pagesAfter.Contains(pageAgain))
-                    return; // Invalid
+                {
+                    inValidUpdates.Add(pages);
+                    return;
+                }
+
                 if (pageAgain == page)
                     break;
             }
 
     validUpdates.Add(pages);
 }
-
-Console.WriteLine(validUpdates.Count);
