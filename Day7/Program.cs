@@ -20,7 +20,8 @@ foreach (string line in data)
     sumValid += GetValidResult(numbers);
 }
 
-Console.WriteLine($"Part 1: {sumValid}"); // 850435817339
+Console.WriteLine($"Part 2: {sumValid}");
+// Part 1: 850435817339
 
 
 return;
@@ -51,6 +52,12 @@ long GetValidResult(long[] numbers)
                 case '*':
                     testRes *= numbers[i + 2];
                     break;
+                case '|':
+                    // Get testRes and the next number as string representations
+                    // Concatenate the strings
+                    // Convert the concatenated string to an integer
+                    testRes = long.Parse(string.Concat(testRes, numbers[i + 2]));
+                    break;
             }
         }
 
@@ -64,8 +71,8 @@ long GetValidResult(long[] numbers)
 // Return true if `input` is only multiply. Otherwise false
 bool IncrementOperators(char[] input)
 {
-    // It doesn't contain any addition => last operations
-    if (!input.Contains('+'))
+    // It doesn't contain any addition or multiplicat => last operations
+    if (!input.Contains('+') && !input.Contains('*'))
         return true;
 
     for (int i = input.Length - 1; i >= 0; i--)
@@ -73,6 +80,12 @@ bool IncrementOperators(char[] input)
         if (input[i] == '+')
         {
             input[i] = '*';
+            break;
+        }
+
+        if (input[i] == '*')
+        {
+            input[i] = '|';
             break;
         }
 
