@@ -12,11 +12,22 @@ int lineLength = data[0].Length;
 
 var antiNodes = new Dictionary<(int x, int y), char>();
 
+// PART 1 PSEUDO
 /* Go through the data left -> right, top -> bottom.
  ** When it hits a letter or digit => Start a new loop from the position after this letter/digit
  *** Every time it hits the same letter/digit
  **** Calculate the difference in x- and y coordinates (`dx`, `dy`)
  **** In a dictionary, store '#' in coordinates (-dx, -dy) from the first letter/digit and (+dx, +dy) from the second letter/digit, if they are within the range of the map
+ * Count how many items the dictionary has to find the number of unique anti nodes
+ */
+
+// PART 2 PSEUDO
+/* Go through the data left -> right, top -> bottom.
+ ** When it hits a letter or digit => Start a new loop from the position after this letter/digit
+ *** Every time it hits the same letter/digit
+ **** Calculate the difference in x- and y coordinates (`dx`, `dy`)
+ **** In a dictionary, store '#' in coordinates (-dx, -dy) from the first letter/digit and (+dx, +dy) from the second letter/digit, if they are within the range of the map
+ ***** This needs to be done until (-a*dx, -a*dy) respectively (+a*dx, +a*dy) is outside the map
  * Count how many items the dictionary has to find the number of unique anti nodes
  */
 
@@ -35,6 +46,7 @@ for (var y = 0; y < nLines; y++)
 Console.WriteLine(antiNodes.Count);
 PrintMapWithAntiNodes();
 // Part 1: 409
+// Part 2: 1308
 return;
 
 void FindAntiNodes(int startX, int startY, char frequency)
@@ -54,21 +66,34 @@ void FindAntiNodes(int startX, int startY, char frequency)
             int dx = x - startX;
             int dy = y - startY;
 
-            (int x, int y) antiNode1 = (startX - dx, startY - dy);
-            (int x, int y) antiNode2 = (x + dx, y + dy);
-
-            AddNodeIfValid(antiNode1);
-            AddNodeIfValid(antiNode2);
+            AddNodesIfValid(-dx, -dy, (startX, startY));
+            AddNodesIfValid(dx, dy, (x, y));
         }
 
         actualXStart = 0;
     }
 }
 
-void AddNodeIfValid((int x, int y) node)
+void AddNodesIfValid(int dx, int dy, (int x, int y) node)
 {
-    if (node.x >= 0 && node.x < lineLength && node.y >= 0 && node.y < nLines)
-        antiNodes.TryAdd(node, '#');
+    // If this function is called, that means a pair of antennas has been found and both antennas (which are at `node` coords)
+    // needs to be added to `antiNodes`
+    antiNodes.TryAdd(node, '#');
+
+    while (true)
+    {
+        (int x, int y) antiNode = (node.x + dx, node.y + dy);
+
+        if (antiNode.x >= 0 && antiNode.x < lineLength && antiNode.y >= 0 && antiNode.y < nLines)
+        {
+            antiNodes.TryAdd(antiNode, '#');
+            node = antiNode;
+        }
+        else
+        {
+            break;
+        }
+    }
 }
 
 void PrintMapWithAntiNodes()
