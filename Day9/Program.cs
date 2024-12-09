@@ -12,11 +12,15 @@ string map = File.ReadAllLines(path)[0]; // Only one line
 var id = 0;
 var isFile = true;
 var blocks = new List<long>();
+var emptySpaces = new List<EmptySpace>();
 
 // 00...111...2...333.44.5555.6666.777.888899
 foreach (char n in map)
 {
     int nBlocks = n - '0';
+    if (!isFile)
+        emptySpaces.Add(new EmptySpace(blocks.Count, nBlocks));
+        
     for (var j = 0; j < nBlocks; j++)
     {
         blocks.Add(isFile ? id : -1);
@@ -131,3 +135,5 @@ void MoveFile(int fileStart, int emptyStart, int length)
         blocks[i] = fileId;
     }
 }
+
+public record EmptySpace(int start, int length);
