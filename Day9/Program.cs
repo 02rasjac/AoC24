@@ -1,4 +1,4 @@
-﻿#define IS_SAMPLE
+﻿// #define IS_SAMPLE
 
 #if IS_SAMPLE
 const string path = "sample.txt";
@@ -19,8 +19,12 @@ foreach (char n in map)
 {
     int nBlocks = n - '0';
     if (!isFile)
-        emptySpaces.Add(new EmptySpace(blocks.Count, nBlocks));
-        
+        emptySpaces.Add(new EmptySpace
+        {
+            Length = nBlocks,
+            Start = blocks.Count
+        });
+
     for (var j = 0; j < nBlocks; j++)
     {
         blocks.Add(isFile ? id : -1);
@@ -47,8 +51,7 @@ for (var i = 0; i < blocks.Count; i++)
 
 Console.WriteLine(checkSum);
 // Part 1: 6430446922192
-// Part 2: 6460170597310 high
-// Part 2: 6459957690257 low
+// Part 2: 6460170593016
 return;
 
 // 0099811188827773336446555566..............
@@ -89,33 +92,26 @@ void Part2()
 
         int fileLength = fileEnd - fileStart + 1;
 
-        int emptyStart = -1;
-        for (var i = 0; i < fileStart; i++)
+        EmptySpace space = emptySpaces.Find(space => space.Length >= fileLength) ??
+                           new EmptySpace { Length = -1, Start = -1 };
+        if (space.Start < 0 || space.Start >= fileStart)
         {
-            if (emptyStart < 0)
-            {
-                // Start of an empty space
-                if (blocks[i] < 0)
-                    emptyStart = i;
+            fileEnd = fileStart;
+            continue;
+        }
 
-                // Haven't found the start of an empty space
-                continue;
-            }
+        // Move file to start of empty space
+        for (int i = space.Start; i < space.Start + fileLength; i++)
+        {
+            blocks[i] = blocks[fileStart];
+        }
 
-            // Ignore if the block isn't empty, and break if it goes above the fileStart index
-            if (blocks[i] >= 0 || i == fileStart - 1)
-            {
-                int emptyEnd = i == fileStart - 1 ? i : i - 1;
+        space.Length -= fileLength;
+        space.Start += fileLength;
 
-                int emptyLength = emptyEnd - emptyStart + 1;
-                if (emptyLength >= fileLength)
-                {
-                    MoveFile(fileStart, emptyStart, fileLength);
-                    break;
-                }
-
-                emptyStart = -1;
-            }
+        for (int i = fileStart; i < fileEnd + 1; i++)
+        {
+            blocks[i] = -1;
         }
 
         fileEnd = fileStart;
@@ -136,4 +132,8 @@ void MoveFile(int fileStart, int emptyStart, int length)
     }
 }
 
-public record EmptySpace(int start, int length);
+public record EmptySpace
+{
+    public required int Length { get; set; }
+    public required int Start { get; set; }
+}
