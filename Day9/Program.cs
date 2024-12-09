@@ -92,6 +92,7 @@ void Part2()
 
         int fileLength = fileEnd - fileStart + 1;
 
+        // Find an empty space that large enough
         EmptySpace space = emptySpaces.Find(space => space.Length >= fileLength) ??
                            new EmptySpace { Length = -1, Start = -1 };
         if (space.Start < 0 || space.Start >= fileStart)
@@ -100,35 +101,26 @@ void Part2()
             continue;
         }
 
-        // Move file to start of empty space
-        for (int i = space.Start; i < space.Start + fileLength; i++)
-        {
-            blocks[i] = blocks[fileStart];
-        }
-
-        space.Length -= fileLength;
-        space.Start += fileLength;
-
-        for (int i = fileStart; i < fileEnd + 1; i++)
-        {
-            blocks[i] = -1;
-        }
+        MoveFile(fileStart, space, fileLength);
 
         fileEnd = fileStart;
     }
 }
 
-void MoveFile(int fileStart, int emptyStart, int length)
+void MoveFile(int fileStart, EmptySpace emptySpace, int length)
 {
-    long fileId = blocks[fileStart];
+    // Move file to start of empty space
+    for (int i = emptySpace.Start; i < emptySpace.Start + length; i++)
+    {
+        blocks[i] = blocks[fileStart];
+    }
+
+    emptySpace.Length -= length;
+    emptySpace.Start += length;
+
     for (int i = fileStart; i < fileStart + length; i++)
     {
         blocks[i] = -1;
-    }
-
-    for (int i = emptyStart; i < emptyStart + length; i++)
-    {
-        blocks[i] = fileId;
     }
 }
 
