@@ -17,7 +17,6 @@ List<Node> nodes = new();
 // Create a node for every position and add it to `nodes`, where they are kept track of with their index
 // Node is the trailhead and the value is the set of tails
 var trailHeadsUniqueTails = new Dictionary<Node, HashSet<Node>>();
-var trailHeadsUniqueTrail = new Dictionary<Node, int>();
 for (var y = 0; y < maxY; y++)
 {
     for (var x = 0; x < maxX; x++)
@@ -26,28 +25,30 @@ for (var y = 0; y < maxY; y++)
         int height = map[y][x] - '0';
         var node = new Node((x, y), height);
         if (x > 0)
-            node.neighbors.Add(Direction.Left, CoordToIndex((x - 1, y)));
+            node.Neighbors.Add(Direction.Left, CoordToIndex((x - 1, y)));
         if (x < maxX - 1)
-            node.neighbors.Add(Direction.Right, CoordToIndex((x + 1, y)));
+            node.Neighbors.Add(Direction.Right, CoordToIndex((x + 1, y)));
         if (y > 0)
-            node.neighbors.Add(Direction.Up, CoordToIndex((x, y - 1)));
+            node.Neighbors.Add(Direction.Up, CoordToIndex((x, y - 1)));
         if (y < maxY - 1)
-            node.neighbors.Add(Direction.Down, CoordToIndex((x, y + 1)));
+            node.Neighbors.Add(Direction.Down, CoordToIndex((x, y + 1)));
 
         nodes.Add(node);
-        if (node.isHead)
+        if (node.IsHead)
             trailHeadsUniqueTails.Add(node, []);
     }
 }
 
+// Part 2 (rating)
 // Perform BFS on each trailHead to find unique ends
 var uniqueTrails = 0;
 foreach ((Node head, var tails) in trailHeadsUniqueTails)
 {
-    BFS(head, tails);
-    uniqueTrails += DFS(head);
+    Bfs(head, tails);
+    uniqueTrails += Dfs(head);
 }
 
+// Part 1 summation (score)
 var sum = 0;
 foreach (var node in trailHeadsUniqueTails.Values)
 {
@@ -64,9 +65,9 @@ int CoordToIndex(Coordinate coord)
     return coord.y * maxX + coord.x;
 }
 
-void BFS(Node head, HashSet<Node> tails)
+void Bfs(Node head, HashSet<Node> tails)
 {
-    int headIndex = CoordToIndex(head.coordinate);
+    int headIndex = CoordToIndex(head.Coordinate);
     var queue = new Queue<int>();
     var visitedByIndex = new Dictionary<int, bool>();
     visitedByIndex.Add(headIndex, true);
@@ -76,7 +77,7 @@ void BFS(Node head, HashSet<Node> tails)
         int currIndex = queue.Dequeue();
         Node currNode = nodes[currIndex];
 
-        foreach ((Direction direction, int neighborIndex) in currNode.neighbors)
+        foreach ((Direction _, int neighborIndex) in currNode.Neighbors)
         {
             // If it exists in visited, skip the content, otherwise work with it
             if (visitedByIndex.TryGetValue(neighborIndex, out _)) continue;
@@ -84,10 +85,10 @@ void BFS(Node head, HashSet<Node> tails)
             Node neighborNode = nodes[neighborIndex];
 
             // Only continue when the height increases by exactly one
-            if (neighborNode.height != currNode.height + 1) continue;
+            if (neighborNode.Height != currNode.Height + 1) continue;
 
             // End of trail
-            if (neighborNode.height == 9)
+            if (neighborNode.Height == 9)
                 tails.Add(neighborNode);
 
             queue.Enqueue(neighborIndex);
@@ -96,85 +97,44 @@ void BFS(Node head, HashSet<Node> tails)
     }
 }
 
-int DFS(Node head)
+int Dfs(Node head)
 {
-    int headIndex = CoordToIndex(head.coordinate);
-    // var stack = new Stack<int>();
-    var visitedByIndex = new Dictionary<int, bool>();
-    visitedByIndex.Add(headIndex, true);
-    // stack.Push(headIndex);
-    var rating = 0;
-    // foreach ((Direction direction, int neighborIndex) in head.neighbors)
-    // {
-    //     if (nodes[neighborIndex].height != nodes[headIndex].height + 1) continue;
-    //
-    //     rating += DFSRec(neighborIndex, 0, visitedByIndex);
-    //     visitedByIndex.Clear();
-    // }
+    int headIndex = CoordToIndex(head.Coordinate);
 
-    rating = DFSRec(headIndex, 0, visitedByIndex);
+    return DfsRec(headIndex, 0);
 
-    return rating;
-
-    int DFSRec(int i, int count, Dictionary<int, bool> visited)
+    int DfsRec(int i, int count)
     {
-        // int currIndex = stack.Pop();
         Node currNode = nodes[i];
 
-        if (currNode.height == 9)
+        if (currNode.Height == 9)
         {
             count++;
             return count;
         }
 
-        foreach ((Direction direction, int neighborIndex) in currNode.neighbors)
+        foreach ((Direction _, int neighborIndex) in currNode.Neighbors)
         {
-            // If it exists in visited, skip the content, otherwise work with it
-            // if (visited.TryGetValue(neighborIndex, out _)) continue;
-
             Node neighborNode = nodes[neighborIndex];
 
             // Only continue when the height increases by exactly one
-            if (neighborNode.height != currNode.height + 1) continue;
+            if (neighborNode.Height != currNode.Height + 1) continue;
 
-            // // End of trail
-            // if (neighborNode.height == 9)
-            // {
-            //     count++;
-            //     return count;
-            // }
-
-            // stack.Push(neighborIndex);
-            // visited.Add(neighborIndex, true);
-            count = DFSRec(neighborIndex, count, visited);
+            count = DfsRec(neighborIndex, count);
         }
 
         return count;
     }
 }
 
-// var nodes = new Dictionary<(int x, int y), Node>();
-// // Node record:
-// // x and y coordinates
-// // its height value
-// // References to its adjacent nodes, with `null` if it's out of bounds
-// // boolean isHead
-// // List of references to nodes for unique tails
-public class Node
+public class Node(Coordinate coordinate, int height)
 {
-    public readonly Coordinate coordinate;
-    public readonly int height;
-    public readonly bool isHead;
+    public readonly Coordinate Coordinate = coordinate;
+    public readonly int Height = height;
+    public readonly bool IsHead = height == 0;
 
     // Up to four directions, the `int` is the index of its neighbour in `nodes`
-    public Dictionary<Direction, int> neighbors = new();
-
-    public Node(Coordinate coordinate, int height)
-    {
-        this.coordinate = coordinate;
-        this.height = height;
-        isHead = height == 0;
-    }
+    public readonly Dictionary<Direction, int> Neighbors = new();
 }
 
 public enum Direction
