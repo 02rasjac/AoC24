@@ -8,7 +8,6 @@ const string path = "sample.txt";
 const string path = "data.txt";
 #endif
 
-// 2333133121414131402
 string[] map = File.ReadAllLines(path);
 int maxY = map.Length;
 int maxX = map[0].Length;
@@ -17,7 +16,8 @@ List<Node> nodes = new();
 
 // Create a node for every position and add it to `nodes`, where they are kept track of with their index
 // Node is the trailhead and the value is the set of tails
-var trailHeads = new Dictionary<Node, HashSet<Node>>();
+var trailHeadsUniqueTails = new Dictionary<Node, HashSet<Node>>();
+var trailHeadsUniqueTrail = new Dictionary<Node, int>();
 for (var y = 0; y < maxY; y++)
 {
     for (var x = 0; x < maxX; x++)
@@ -36,12 +36,35 @@ for (var y = 0; y < maxY; y++)
 
         nodes.Add(node);
         if (node.isHead)
-            trailHeads.Add(node, []);
+            trailHeadsUniqueTails.Add(node, []);
     }
 }
 
 // Perform BFS on each trailHead to find unique ends
-foreach ((Node head, var tails) in trailHeads)
+var uniqueTrails = 0;
+foreach ((Node head, var tails) in trailHeadsUniqueTails)
+{
+    BFS(head, tails);
+    uniqueTrails += DFS(head);
+}
+
+var sum = 0;
+foreach (var node in trailHeadsUniqueTails.Values)
+{
+    sum += node.Count;
+}
+
+Console.WriteLine($"Part 1: {sum}");
+Console.WriteLine($"Part 2: {uniqueTrails}");
+
+return;
+
+int CoordToIndex(Coordinate coord)
+{
+    return coord.y * maxX + coord.x;
+}
+
+void BFS(Node head, HashSet<Node> tails)
 {
     int headIndex = CoordToIndex(head.coordinate);
     var queue = new Queue<int>();
@@ -56,38 +79,78 @@ foreach ((Node head, var tails) in trailHeads)
         foreach ((Direction direction, int neighborIndex) in currNode.neighbors)
         {
             // If it exists in visited, skip the content, otherwise work with it
-            if (!visitedByIndex.TryGetValue(neighborIndex, out _))
-            {
-                Node neighborNode = nodes[neighborIndex];
+            if (visitedByIndex.TryGetValue(neighborIndex, out _)) continue;
 
-                // Only continue when the height increases by exactly one
-                if (neighborNode.height == currNode.height + 1)
-                {
-                    // End of trail
-                    if (neighborNode.height == 9)
-                        tails.Add(neighborNode);
+            Node neighborNode = nodes[neighborIndex];
 
-                    queue.Enqueue(neighborIndex);
-                    visitedByIndex.Add(neighborIndex, true);
-                }
-            }
+            // Only continue when the height increases by exactly one
+            if (neighborNode.height != currNode.height + 1) continue;
+
+            // End of trail
+            if (neighborNode.height == 9)
+                tails.Add(neighborNode);
+
+            queue.Enqueue(neighborIndex);
+            visitedByIndex.Add(neighborIndex, true);
         }
     }
 }
 
-var sum = 0;
-foreach (var node in trailHeads.Values)
+int DFS(Node head)
 {
-    sum += node.Count;
-}
+    int headIndex = CoordToIndex(head.coordinate);
+    // var stack = new Stack<int>();
+    var visitedByIndex = new Dictionary<int, bool>();
+    visitedByIndex.Add(headIndex, true);
+    // stack.Push(headIndex);
+    var rating = 0;
+    // foreach ((Direction direction, int neighborIndex) in head.neighbors)
+    // {
+    //     if (nodes[neighborIndex].height != nodes[headIndex].height + 1) continue;
+    //
+    //     rating += DFSRec(neighborIndex, 0, visitedByIndex);
+    //     visitedByIndex.Clear();
+    // }
 
-Console.WriteLine($"Part 1: {sum}");
+    rating = DFSRec(headIndex, 0, visitedByIndex);
 
-return;
+    return rating;
 
-int CoordToIndex(Coordinate coord)
-{
-    return coord.y * maxX + coord.x;
+    int DFSRec(int i, int count, Dictionary<int, bool> visited)
+    {
+        // int currIndex = stack.Pop();
+        Node currNode = nodes[i];
+
+        if (currNode.height == 9)
+        {
+            count++;
+            return count;
+        }
+
+        foreach ((Direction direction, int neighborIndex) in currNode.neighbors)
+        {
+            // If it exists in visited, skip the content, otherwise work with it
+            // if (visited.TryGetValue(neighborIndex, out _)) continue;
+
+            Node neighborNode = nodes[neighborIndex];
+
+            // Only continue when the height increases by exactly one
+            if (neighborNode.height != currNode.height + 1) continue;
+
+            // // End of trail
+            // if (neighborNode.height == 9)
+            // {
+            //     count++;
+            //     return count;
+            // }
+
+            // stack.Push(neighborIndex);
+            // visited.Add(neighborIndex, true);
+            count = DFSRec(neighborIndex, count, visited);
+        }
+
+        return count;
+    }
 }
 
 // var nodes = new Dictionary<(int x, int y), Node>();
