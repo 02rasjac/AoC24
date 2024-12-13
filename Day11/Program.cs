@@ -1,6 +1,7 @@
 ﻿// #define IS_SAMPLE
 
 using System.Diagnostics;
+using StonesCount = System.Collections.Generic.Dictionary<string, long>;
 
 #if IS_SAMPLE
 const string path = "sample.txt";
@@ -11,8 +12,8 @@ const string path = "data.txt";
 long startTime = Stopwatch.GetTimestamp();
 
 var stones = File.ReadAllLines(path)[0].Split().ToList(); // Only one file
-var stonesCount1 = new Dictionary<string, long>();
-var stonesCount2 = new Dictionary<string, long>();
+var stonesCount1 = new StonesCount();
+var stonesCount2 = new StonesCount();
 var useCount1 = true;
 
 // Initiate `stonesCount`
@@ -21,65 +22,54 @@ foreach (string stone in stones)
     stonesCount1.Add(stone, 1);
 }
 
-var blink = 0;
 const int maxBlinks = 75;
 
-while (blink < maxBlinks)
+for (var blink = 0; blink < maxBlinks; blink++)
 {
     if (useCount1)
-    {
-        foreach ((string stone, long amount) in stonesCount1)
-        {
-            CheckStone(stone, amount, stonesCount2);
-        }
-
-        stonesCount1.Clear();
-    }
+        UpdateStonesCounts(stonesCount1, stonesCount2);
     else
-    {
-        foreach ((string stone, long amount) in stonesCount2)
-        {
-            CheckStone(stone, amount, stonesCount1);
-        }
+        UpdateStonesCounts(stonesCount2, stonesCount1);
 
-        stonesCount2.Clear();
-    }
-
-    blink++;
     useCount1 = !useCount1;
 }
 
 long nStones = useCount1 ? stonesCount1.Sum(stone => stone.Value) : stonesCount2.Sum(stone => stone.Value);
 
-Console.WriteLine($"Part 1: {nStones}");
+Console.WriteLine($"Number of stones after {maxBlinks} blinks: {nStones}");
 Console.WriteLine($"Elapsed time: {Stopwatch.GetElapsedTime(startTime)}");
 // Part 1: 186175
 // Part 2: 220566831337810
 return;
 
-void CheckStone(string stone, long multiplier, Dictionary<string, long> stonesCount)
+void UpdateStonesCounts(StonesCount fromStonesCount, StonesCount toStonesCount)
 {
-    if (stone == "0")
+    foreach ((string stone, long amount) in fromStonesCount)
     {
-        AddOrIncrement("1", multiplier, stonesCount);
-    }
-    else if (stone.Length % 2 == 0)
-    {
-        string firstHalf = stone[..(stone.Length / 2)];
-        string secondHalf = stone[(stone.Length / 2)..].TrimStart('0'); // Also remove the leading zeros
-        if (secondHalf == "")
-            secondHalf = "0";
+        if (stone == "0")
+        {
+            AddOrIncrement("1", amount, toStonesCount);
+        }
+        else if (stone.Length % 2 == 0)
+        {
+            string firstHalf = stone[..(stone.Length / 2)];
+            string secondHalf = stone[(stone.Length / 2)..].TrimStart('0'); // Also remove the leading zeros
+            if (secondHalf == "")
+                secondHalf = "0";
 
-        AddOrIncrement(firstHalf, multiplier, stonesCount);
-        AddOrIncrement(secondHalf, multiplier, stonesCount);
+            AddOrIncrement(firstHalf, amount, toStonesCount);
+            AddOrIncrement(secondHalf, amount, toStonesCount);
+        }
+        else
+        {
+            AddOrIncrement((long.Parse(stone) * 2024).ToString(), amount, toStonesCount);
+        }
     }
-    else
-    {
-        AddOrIncrement((long.Parse(stone) * 2024).ToString(), multiplier, stonesCount);
-    }
+
+    fromStonesCount.Clear();
 }
 
-void AddOrIncrement(string stone, long multiplier, Dictionary<string, long> stonesCount)
+void AddOrIncrement(string stone, long multiplier, StonesCount stonesCount)
 {
     if (!stonesCount.TryAdd(stone, multiplier))
         stonesCount[stone] += multiplier;
