@@ -1,4 +1,4 @@
-﻿#define IS_SAMPLE
+﻿// #define IS_SAMPLE
 
 using System.Diagnostics;
 using Coordinate = (int x, int y);
@@ -14,7 +14,10 @@ var maxX = 0;
 var maxY = 0;
 
 var garden = InitGarden();
-Region regions = FindRegion();
+var regions = FindRegions(garden);
+
+int totalPrice = regions.Sum(region => region.GetPrice());
+Console.WriteLine($"Total price: {totalPrice}");
 
 return;
 
@@ -23,12 +26,12 @@ Plot[] InitGarden()
     string[] initialGarden = File.ReadAllLines(path);
     var garden = new Plot[initialGarden.Length * initialGarden[0].Length];
 
-    maxX = initialGarden[0].Length;
-    maxY = initialGarden.Length;
+    maxX = initialGarden[0].Length - 1;
+    maxY = initialGarden.Length - 1;
 
-    for (var y = 0; y < maxY; y++)
+    for (var y = 0; y <= maxY; y++)
     {
-        for (var x = 0; x < maxX; x++)
+        for (var x = 0; x <= maxX; x++)
         {
             garden[GetIndex((x, y))] = new Plot((x, y), initialGarden[y][x]);
         }
@@ -37,12 +40,26 @@ Plot[] InitGarden()
     return garden;
 }
 
-Region FindRegion()
+List<Region> FindRegions(Plot[] inGarden)
 {
-    var region = new Region();
+    var regions = new List<Region>();
+    foreach (Plot plot in inGarden)
+    {
+        // The plot has already been added to a region
+        if (plot.belongsToRegion >= 0)
+            continue;
+        regions.Add(FindRegion(plot, inGarden));
+    }
+
+    return regions;
+}
+
+Region FindRegion(Plot startPlot, Plot[] inGarden)
+{
+    var region = new Region(startPlot.plantType);
 
     var queue = new Queue<Plot>();
-    queue.Enqueue(garden[0]);
+    queue.Enqueue(startPlot);
 
     while (queue.Count > 0)
     {
@@ -59,27 +76,27 @@ Region FindRegion()
         int rightI = GetNextPlotIndex(plot.coordinate);
         int belowI = GetBelowPlotIndex(plot.coordinate);
 
-        if (leftI >= 0 && garden[leftI].plantType == plot.plantType)
+        if (leftI >= 0 && inGarden[leftI].plantType == plot.plantType)
         {
-            queue.Enqueue(garden[leftI]);
+            queue.Enqueue(inGarden[leftI]);
             plot.nFencedBorders--;
         }
 
-        if (aboveI >= 0 && garden[aboveI].plantType == plot.plantType)
+        if (aboveI >= 0 && inGarden[aboveI].plantType == plot.plantType)
         {
-            queue.Enqueue(garden[aboveI]);
+            queue.Enqueue(inGarden[aboveI]);
             plot.nFencedBorders--;
         }
 
-        if (rightI >= 0 && garden[rightI].plantType == plot.plantType)
+        if (rightI >= 0 && inGarden[rightI].plantType == plot.plantType)
         {
-            queue.Enqueue(garden[rightI]);
+            queue.Enqueue(inGarden[rightI]);
             plot.nFencedBorders--;
         }
 
-        if (belowI >= 0 && garden[belowI].plantType == plot.plantType)
+        if (belowI >= 0 && inGarden[belowI].plantType == plot.plantType)
         {
-            queue.Enqueue(garden[belowI]);
+            queue.Enqueue(inGarden[belowI]);
             plot.nFencedBorders--;
         }
 
@@ -93,35 +110,35 @@ Region FindRegion()
 
 int GetIndex(Coordinate coordinate)
 {
-    return maxX * coordinate.y + coordinate.x;
+    return (maxX + 1) * coordinate.y + coordinate.x;
 }
 
 int GetPreviousPlotIndex(Coordinate coordinate)
 {
     if (coordinate.x == 0)
         return -1;
-    return maxX * coordinate.y + coordinate.x - 1;
+    return (maxX + 1) * coordinate.y + coordinate.x - 1;
 }
 
 int GetNextPlotIndex(Coordinate coordinate)
 {
     if (coordinate.x == maxX)
         return -1;
-    return maxX * coordinate.y + coordinate.x + 1;
+    return (maxX + 1) * coordinate.y + coordinate.x + 1;
 }
 
 int GetAbovePlotIndex(Coordinate coordinate)
 {
     if (coordinate.y == 0)
         return -1;
-    return maxX * (coordinate.y - 1) + coordinate.x;
+    return (maxX + 1) * (coordinate.y - 1) + coordinate.x;
 }
 
 int GetBelowPlotIndex(Coordinate coordinate)
 {
     if (coordinate.y == maxY)
         return -1;
-    return maxX * (coordinate.y + 1) + coordinate.x;
+    return (maxX + 1) * (coordinate.y + 1) + coordinate.x;
 }
 
 #endregion
@@ -145,13 +162,15 @@ internal class Region
     private static int nextRegionId = 1;
     private readonly List<Plot> plots = [];
     private readonly int regionId;
+    private readonly char regionPlant;
 
     private int area;
     private int perimeter;
 
-    public Region()
+    public Region(char regionPlant)
     {
         regionId = nextRegionId++;
+        this.regionPlant = regionPlant;
     }
 
     public void AddPlot(Plot plot)
@@ -160,5 +179,10 @@ internal class Region
         plot.belongsToRegion = regionId;
         area++;
         perimeter += plot.nFencedBorders;
+    }
+
+    public int GetPrice()
+    {
+        return area * perimeter;
     }
 }
