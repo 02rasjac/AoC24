@@ -1,4 +1,4 @@
-﻿// #define IS_SAMPLE
+﻿#define IS_SAMPLE
 
 using System.Diagnostics;
 using Coordinate = (int x, int y);
@@ -79,25 +79,25 @@ Region FindRegion(Plot startPlot, Plot[] inGarden)
         if (leftI >= 0 && inGarden[leftI].plantType == plot.plantType)
         {
             queue.Enqueue(inGarden[leftI]);
-            plot.nFencedBorders--;
+            plot.RemoveFence(FenceDirection.Left);
         }
 
         if (aboveI >= 0 && inGarden[aboveI].plantType == plot.plantType)
         {
             queue.Enqueue(inGarden[aboveI]);
-            plot.nFencedBorders--;
+            plot.RemoveFence(FenceDirection.Above);
         }
 
         if (rightI >= 0 && inGarden[rightI].plantType == plot.plantType)
         {
             queue.Enqueue(inGarden[rightI]);
-            plot.nFencedBorders--;
+            plot.RemoveFence(FenceDirection.Right);
         }
 
         if (belowI >= 0 && inGarden[belowI].plantType == plot.plantType)
         {
             queue.Enqueue(inGarden[belowI]);
-            plot.nFencedBorders--;
+            plot.RemoveFence(FenceDirection.Below);
         }
 
         region.AddPlot(plot);
@@ -147,7 +147,12 @@ internal class Plot
 {
     public readonly Coordinate coordinate;
     public readonly char plantType;
+
     public int belongsToRegion = -1;
+
+    // [left, top, right, bottom]. True => has fence
+    public bool[] fencedBorders = [true, true, true, true];
+    public bool isBorder = true;
     public int nFencedBorders = 4;
 
     public Plot(Coordinate coordinate, char plantType)
@@ -155,11 +160,38 @@ internal class Plot
         this.coordinate = coordinate;
         this.plantType = plantType;
     }
+
+    public void RemoveFence(FenceDirection direction)
+    {
+        nFencedBorders--;
+
+        switch (direction)
+        {
+            case FenceDirection.Left:
+                fencedBorders[0] = false;
+                break;
+            case FenceDirection.Above:
+                fencedBorders[1] = false;
+                break;
+            case FenceDirection.Right:
+                fencedBorders[2] = false;
+                break;
+            case FenceDirection.Below:
+                fencedBorders[3] = false;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
+        }
+
+        if (nFencedBorders == 0)
+            isBorder = false;
+    }
 }
 
 internal class Region
 {
     private static int nextRegionId = 1;
+    private readonly Coordinate[] boundingBox = [(-1, -1), (-1, -1)]; // [(left, top), (right, bottom)]
     private readonly List<Plot> plots = [];
     private readonly int regionId;
     private readonly char regionPlant;
@@ -179,6 +211,24 @@ internal class Region
         plot.belongsToRegion = regionId;
         area++;
         perimeter += plot.nFencedBorders;
+
+        Coordinate plotCoords = plot.coordinate;
+        if (boundingBox[0].x < 0)
+        {
+            boundingBox[0] = plotCoords;
+            boundingBox[1] = plotCoords;
+            return;
+        }
+
+        // Modify the bounding box accordingly
+        if (plotCoords.x < boundingBox[0].x)
+            boundingBox[0].x = plotCoords.x;
+        if (plotCoords.x > boundingBox[1].x)
+            boundingBox[1].x = plotCoords.x;
+        if (plotCoords.y < boundingBox[0].y)
+            boundingBox[0].y = plotCoords.y;
+        if (plotCoords.y > boundingBox[1].y)
+            boundingBox[1].y = plotCoords.y;
     }
 
     public int GetPrice()
@@ -186,3 +236,19 @@ internal class Region
         return area * perimeter;
     }
 }
+
+public enum FenceDirection
+{
+    Left = 0,
+    Above = 1,
+    Right = 2,
+    Below = 3
+}
+
+// When adding a plot to the region, store in which direction its fences goes.
+// In the region, store bounding box's top-left coordinate and bottom-right coordinate
+// For every region, perform 4 loops from top to bottom, left to right of the bounding box
+// First, count the number of connected sides of fences above the plot
+// Then, count the number of connected sides of fences below the plot
+// Then, count the number of connected sides of fences to the left of the plot
+// Lastly, count the number of connected sides of fences to the right of the plot.
