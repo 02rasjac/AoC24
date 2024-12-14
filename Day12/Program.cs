@@ -1,6 +1,5 @@
 ﻿// #define IS_SAMPLE
 
-using System.Diagnostics;
 using Coordinate = (int x, int y);
 
 #if IS_SAMPLE
@@ -9,7 +8,6 @@ const string path = "sample.txt";
 const string path = "data.txt";
 #endif
 
-long startTime = Stopwatch.GetTimestamp();
 var maxX = 0;
 var maxY = 0;
 
@@ -23,7 +21,6 @@ foreach (Region region in regions)
     nSides += FindHorizontalFencesLeft(region);
     nSides += FindHorizontalFencesRight(region);
     region.SetSides(nSides);
-    Console.WriteLine($"{nSides} sides up for region {region}");
 }
 
 int totalStandardPrice = regions.Sum(region => region.GetPrice());
@@ -38,7 +35,7 @@ return;
 Plot[] InitGarden()
 {
     string[] initialGarden = File.ReadAllLines(path);
-    var garden = new Plot[initialGarden.Length * initialGarden[0].Length];
+    var newGarden = new Plot[initialGarden.Length * initialGarden[0].Length];
 
     maxX = initialGarden[0].Length - 1;
     maxY = initialGarden.Length - 1;
@@ -47,27 +44,19 @@ Plot[] InitGarden()
     {
         for (var x = 0; x <= maxX; x++)
         {
-            garden[GetIndex((x, y))] = new Plot((x, y), initialGarden[y][x]);
+            newGarden[GetIndex((x, y))] = new Plot((x, y), initialGarden[y][x]);
         }
     }
 
-    return garden;
+    return newGarden;
 }
 
 List<Region> FindRegions(Plot[] inGarden)
 {
-    var regions = new List<Region>();
-    foreach (Plot plot in inGarden)
-    {
-        // The plot has already been added to a region
-        if (plot.belongsToRegion >= 0)
-            continue;
-        regions.Add(FindRegion(plot, inGarden));
-    }
-
-    return regions;
+    return (from plot in inGarden where plot.belongsToRegion < 0 select FindRegion(plot, inGarden)).ToList();
 }
 
+// Perform floodfill to find all plots that's in a region
 Region FindRegion(Plot startPlot, Plot[] inGarden)
 {
     var region = new Region(startPlot.plantType);
@@ -79,47 +68,31 @@ Region FindRegion(Plot startPlot, Plot[] inGarden)
     {
         Plot plot = queue.Dequeue();
 
-        // // This plot has already been checked
+        // This plot has already been checked
         if (plot.belongsToRegion >= 0)
             continue;
 
-        int i = GetIndex(plot.coordinate);
-
-        int leftI = GetPreviousPlotIndex(plot.coordinate);
-        int aboveI = GetAbovePlotIndex(plot.coordinate);
-        int rightI = GetNextPlotIndex(plot.coordinate);
-        int belowI = GetBelowPlotIndex(plot.coordinate);
-
-        if (leftI >= 0 && inGarden[leftI].plantType == plot.plantType)
-        {
-            queue.Enqueue(inGarden[leftI]);
-            plot.RemoveFence(FenceDirection.Left);
-        }
-
-        if (aboveI >= 0 && inGarden[aboveI].plantType == plot.plantType)
-        {
-            queue.Enqueue(inGarden[aboveI]);
-            plot.RemoveFence(FenceDirection.Above);
-        }
-
-        if (rightI >= 0 && inGarden[rightI].plantType == plot.plantType)
-        {
-            queue.Enqueue(inGarden[rightI]);
-            plot.RemoveFence(FenceDirection.Right);
-        }
-
-        if (belowI >= 0 && inGarden[belowI].plantType == plot.plantType)
-        {
-            queue.Enqueue(inGarden[belowI]);
-            plot.RemoveFence(FenceDirection.Below);
-        }
+        CheckAndEnqueueAdjacentPlot(FenceDirection.Left, GetPreviousPlotIndex(plot.coordinate), plot);
+        CheckAndEnqueueAdjacentPlot(FenceDirection.Above, GetAbovePlotIndex(plot.coordinate), plot);
+        CheckAndEnqueueAdjacentPlot(FenceDirection.Right, GetNextPlotIndex(plot.coordinate), plot);
+        CheckAndEnqueueAdjacentPlot(FenceDirection.Below, GetBelowPlotIndex(plot.coordinate), plot);
 
         region.AddPlot(plot);
     }
 
     return region;
+
+    void CheckAndEnqueueAdjacentPlot(FenceDirection direction, int nextIndex, Plot currPlot)
+    {
+        if (nextIndex < 0 || inGarden[nextIndex].plantType != currPlot.plantType)
+            return;
+
+        queue.Enqueue(inGarden[nextIndex]);
+        currPlot.RemoveFence(direction);
+    }
 }
 
+// TODO: Reduce reused code for these functions.
 int FindHorizontalFencesAbove(Region region)
 {
     var nSides = 0;
@@ -295,23 +268,16 @@ int GetBelowPlotIndex(Coordinate coordinate)
 
 #endregion
 
-internal class Plot
+internal class Plot(Coordinate coordinate, char plantType)
 {
-    public readonly Coordinate coordinate;
-    public readonly char plantType;
+    // [left, top, right, bottom]. True => has fence
+    private readonly bool[] _fencedBorders = [true, true, true, true];
+    public readonly Coordinate coordinate = coordinate;
+    public readonly char plantType = plantType;
 
     public int belongsToRegion = -1;
-
-    // [left, top, right, bottom]. True => has fence
-    public bool[] fencedBorders = [true, true, true, true];
     public bool isBorder = true;
     public int nFencedBorders = 4;
-
-    public Plot(Coordinate coordinate, char plantType)
-    {
-        this.coordinate = coordinate;
-        this.plantType = plantType;
-    }
 
     public void RemoveFence(FenceDirection direction)
     {
@@ -320,16 +286,16 @@ internal class Plot
         switch (direction)
         {
             case FenceDirection.Left:
-                fencedBorders[0] = false;
+                _fencedBorders[0] = false;
                 break;
             case FenceDirection.Above:
-                fencedBorders[1] = false;
+                _fencedBorders[1] = false;
                 break;
             case FenceDirection.Right:
-                fencedBorders[2] = false;
+                _fencedBorders[2] = false;
                 break;
             case FenceDirection.Below:
-                fencedBorders[3] = false;
+                _fencedBorders[3] = false;
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
@@ -341,39 +307,39 @@ internal class Plot
 
     public bool IsFencedBorder(FenceDirection direction)
     {
-        return fencedBorders[(int)direction];
+        return _fencedBorders[(int)direction];
     }
 }
 
 internal class Region
 {
-    private static int nextRegionId = 1;
+    private static int _nextRegionId = 1;
+    private readonly List<Plot> _plots = [];
+    private readonly char _regionPlant;
     public readonly Coordinate[] boundingBox = [(-1, -1), (-1, -1)]; // [(left, top), (right, bottom)]
-    private readonly List<Plot> plots = [];
     public readonly int regionId;
-    private readonly char regionPlant;
 
-    private int area;
-    private int perimeter;
-    private int sides;
+    private int _area;
+    private int _perimeter;
+    private int _sides;
 
     public Region(char regionPlant)
     {
-        regionId = nextRegionId++;
-        this.regionPlant = regionPlant;
+        regionId = _nextRegionId++;
+        _regionPlant = regionPlant;
     }
 
     public override string ToString()
     {
-        return $"{regionId} ({regionPlant})";
+        return $"{regionId} ({_regionPlant})";
     }
 
     public void AddPlot(Plot plot)
     {
-        plots.Add(plot);
+        _plots.Add(plot);
         plot.belongsToRegion = regionId;
-        area++;
-        perimeter += plot.nFencedBorders;
+        _area++;
+        _perimeter += plot.nFencedBorders;
 
         Coordinate plotCoords = plot.coordinate;
         if (boundingBox[0].x < 0)
@@ -396,17 +362,17 @@ internal class Region
 
     public void SetSides(int sides)
     {
-        this.sides = sides;
+        _sides = sides;
     }
 
     public int GetPrice()
     {
-        return area * perimeter;
+        return _area * _perimeter;
     }
 
     public int GetBulkPrice()
     {
-        return area * sides;
+        return _area * _sides;
     }
 }
 
@@ -417,11 +383,3 @@ public enum FenceDirection
     Right = 2,
     Below = 3
 }
-
-// When adding a plot to the region, store in which direction its fences goes.
-// In the region, store bounding box's top-left coordinate and bottom-right coordinate
-// For every region, perform 4 loops from top to bottom, left to right of the bounding box
-// First, count the number of connected sides of fences above the plot
-// Then, count the number of connected sides of fences below the plot
-// Then, count the number of connected sides of fences to the left of the plot
-// Lastly, count the number of connected sides of fences to the right of the plot.
