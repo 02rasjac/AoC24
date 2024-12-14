@@ -1,4 +1,4 @@
-﻿#define IS_SAMPLE
+﻿// #define IS_SAMPLE
 
 using System.Diagnostics;
 using Coordinate = (int x, int y);
@@ -16,8 +16,22 @@ var maxY = 0;
 var garden = InitGarden();
 var regions = FindRegions(garden);
 
-int totalPrice = regions.Sum(region => region.GetPrice());
-Console.WriteLine($"Total price: {totalPrice}");
+foreach (Region region in regions)
+{
+    int nSides = FindHorizontalFencesAbove(region);
+    nSides += FindHorizontalFencesBelow(region);
+    nSides += FindHorizontalFencesLeft(region);
+    nSides += FindHorizontalFencesRight(region);
+    region.SetSides(nSides);
+    Console.WriteLine($"{nSides} sides up for region {region}");
+}
+
+int totalStandardPrice = regions.Sum(region => region.GetPrice());
+int totalBulkPrice = regions.Sum(region => region.GetBulkPrice());
+Console.WriteLine($"Total price: {totalStandardPrice}");
+Console.WriteLine($"Total bulk price: {totalBulkPrice}");
+// Part 1: 1465968
+// Part 2: 897702
 
 return;
 
@@ -106,6 +120,144 @@ Region FindRegion(Plot startPlot, Plot[] inGarden)
     return region;
 }
 
+int FindHorizontalFencesAbove(Region region)
+{
+    var nSides = 0;
+
+    for (int y = region.boundingBox[0].y; y <= region.boundingBox[1].y; y++)
+    {
+        var isSideStarted = false;
+
+        for (int x = region.boundingBox[0].x; x <= region.boundingBox[1].x; x++)
+        {
+            Plot plot = garden[GetIndex((x, y))];
+            if (plot.belongsToRegion != region.regionId)
+            {
+                isSideStarted = false;
+                continue;
+            }
+
+            if (plot.IsFencedBorder(FenceDirection.Above))
+            {
+                if (!isSideStarted)
+                {
+                    nSides++;
+                    isSideStarted = true;
+                }
+
+                continue;
+            }
+
+            isSideStarted = false;
+        }
+    }
+
+    return nSides;
+}
+
+int FindHorizontalFencesBelow(Region region)
+{
+    var nSides = 0;
+
+    for (int y = region.boundingBox[0].y; y <= region.boundingBox[1].y; y++)
+    {
+        var isSideStarted = false;
+
+        for (int x = region.boundingBox[0].x; x <= region.boundingBox[1].x; x++)
+        {
+            Plot plot = garden[GetIndex((x, y))];
+            if (plot.belongsToRegion != region.regionId)
+            {
+                isSideStarted = false;
+                continue;
+            }
+
+            if (plot.IsFencedBorder(FenceDirection.Below))
+            {
+                if (!isSideStarted)
+                {
+                    nSides++;
+                    isSideStarted = true;
+                }
+
+                continue;
+            }
+
+            isSideStarted = false;
+        }
+    }
+
+    return nSides;
+}
+
+int FindHorizontalFencesLeft(Region region)
+{
+    var nSides = 0;
+
+    for (int x = region.boundingBox[0].x; x <= region.boundingBox[1].x; x++)
+    {
+        var isSideStarted = false;
+        for (int y = region.boundingBox[0].y; y <= region.boundingBox[1].y; y++)
+        {
+            Plot plot = garden[GetIndex((x, y))];
+            if (plot.belongsToRegion != region.regionId)
+            {
+                isSideStarted = false;
+                continue;
+            }
+
+            if (plot.IsFencedBorder(FenceDirection.Left))
+            {
+                if (!isSideStarted)
+                {
+                    nSides++;
+                    isSideStarted = true;
+                }
+
+                continue;
+            }
+
+            isSideStarted = false;
+        }
+    }
+
+    return nSides;
+}
+
+int FindHorizontalFencesRight(Region region)
+{
+    var nSides = 0;
+
+    for (int x = region.boundingBox[0].x; x <= region.boundingBox[1].x; x++)
+    {
+        var isSideStarted = false;
+        for (int y = region.boundingBox[0].y; y <= region.boundingBox[1].y; y++)
+        {
+            Plot plot = garden[GetIndex((x, y))];
+            if (plot.belongsToRegion != region.regionId)
+            {
+                isSideStarted = false;
+                continue;
+            }
+
+            if (plot.IsFencedBorder(FenceDirection.Right))
+            {
+                if (!isSideStarted)
+                {
+                    nSides++;
+                    isSideStarted = true;
+                }
+
+                continue;
+            }
+
+            isSideStarted = false;
+        }
+    }
+
+    return nSides;
+}
+
 #region HelperFunctions
 
 int GetIndex(Coordinate coordinate)
@@ -186,23 +338,34 @@ internal class Plot
         if (nFencedBorders == 0)
             isBorder = false;
     }
+
+    public bool IsFencedBorder(FenceDirection direction)
+    {
+        return fencedBorders[(int)direction];
+    }
 }
 
 internal class Region
 {
     private static int nextRegionId = 1;
-    private readonly Coordinate[] boundingBox = [(-1, -1), (-1, -1)]; // [(left, top), (right, bottom)]
+    public readonly Coordinate[] boundingBox = [(-1, -1), (-1, -1)]; // [(left, top), (right, bottom)]
     private readonly List<Plot> plots = [];
-    private readonly int regionId;
+    public readonly int regionId;
     private readonly char regionPlant;
 
     private int area;
     private int perimeter;
+    private int sides;
 
     public Region(char regionPlant)
     {
         regionId = nextRegionId++;
         this.regionPlant = regionPlant;
+    }
+
+    public override string ToString()
+    {
+        return $"{regionId} ({regionPlant})";
     }
 
     public void AddPlot(Plot plot)
@@ -231,9 +394,19 @@ internal class Region
             boundingBox[1].y = plotCoords.y;
     }
 
+    public void SetSides(int sides)
+    {
+        this.sides = sides;
+    }
+
     public int GetPrice()
     {
         return area * perimeter;
+    }
+
+    public int GetBulkPrice()
+    {
+        return area * sides;
     }
 }
 
