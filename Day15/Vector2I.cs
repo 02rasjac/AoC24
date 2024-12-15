@@ -1,4 +1,4 @@
-﻿namespace Day14;
+﻿namespace Day15;
 
 public struct Vector2I(int x, int y)
 {
@@ -43,15 +43,5 @@ public struct Vector2I(int x, int y)
     public static Vector2I operator /(Vector2I a, int scalar)
     {
         return new Vector2I(a.X / scalar, a.Y / scalar);
-    }
-
-    public static bool operator ==(Vector2I a, int scalar)
-    {
-        return a.X == scalar && a.Y == scalar;
-    }
-
-    public static bool operator !=(Vector2I a, int scalar)
-    {
-        return a.X != scalar || a.Y != scalar;
     }
 }
