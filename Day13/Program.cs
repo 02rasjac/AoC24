@@ -1,7 +1,8 @@
-﻿// #define IS_SAMPLE
+﻿#define IS_SAMPLE
 
+using System.Diagnostics;
 using System.Text.RegularExpressions;
-using Coordinate = (int x, int y);
+using Coordinate = (long x, long y);
 
 #if IS_SAMPLE
 const string path = "sample.txt";
@@ -9,8 +10,9 @@ const string path = "sample.txt";
 const string path = "data.txt";
 #endif
 
+long startTime = Stopwatch.GetTimestamp();
+
 string[] data = File.ReadAllLines(path);
-List<Machine> machines = [];
 long totalCost = 0;
 
 for (var i = 0; i < data.Length; i++)
@@ -18,10 +20,12 @@ for (var i = 0; i < data.Length; i++)
     Coordinate deltasA = GetCoordinates(data[i++]);
     Coordinate deltasB = GetCoordinates(data[i++]);
     Coordinate prizeCoords = GetCoordinates(data[i++], true);
+    prizeCoords.x += 10000000000000;
+    prizeCoords.y += 10000000000000;
 
     var newMachine = new Machine(deltasA, deltasB, prizeCoords);
-    machines.Add(newMachine);
     totalCost += newMachine.FindCheapestMoveToPrize();
+    Console.WriteLine($"Elapsed time from start: {Stopwatch.GetElapsedTime(startTime)}");
 }
 
 Console.WriteLine($"Part 1: {totalCost}");
@@ -34,8 +38,8 @@ Coordinate GetCoordinates(string line, bool isPrize = false)
     string regex = isPrize ? @"=(\d+)" : @"\+(\d+)";
 
     MatchCollection coords = Regex.Matches(line, regex);
-    int x = int.Parse(coords[0].Groups[1].Value);
-    int y = int.Parse(coords[1].Groups[1].Value);
+    long x = int.Parse(coords[0].Groups[1].Value);
+    long y = int.Parse(coords[1].Groups[1].Value);
     return (x, y);
 }
 
@@ -43,14 +47,14 @@ internal class Machine(Coordinate aDeltas, Coordinate bDeltas, Coordinate prizeL
 {
     private const int ACost = 3;
     private const int BCost = 1;
-    private const int MaxButtonPresses = 100;
+    private const long MaxButtonPresses = 10000000000000;
 
-    public int FindCheapestMoveToPrize()
+    public long FindCheapestMoveToPrize()
     {
-        var cheapest = int.MaxValue;
-        for (var aPresses = 0; aPresses <= MaxButtonPresses; aPresses++)
+        var cheapest = long.MaxValue;
+        for (long aPresses = 0; aPresses <= MaxButtonPresses; aPresses++)
         {
-            for (int bPresses = MaxButtonPresses; bPresses >= 0; bPresses--)
+            for (long bPresses = MaxButtonPresses; bPresses >= 0; bPresses--)
             {
                 Coordinate location = GetClawLocation(aPresses, bPresses);
                 if (location.x < prizeLocation.x || location.y < prizeLocation.y)
@@ -59,7 +63,7 @@ internal class Machine(Coordinate aDeltas, Coordinate bDeltas, Coordinate prizeL
                     continue;
 
                 // The price was found
-                int cost = ACost * aPresses + BCost * bPresses;
+                long cost = ACost * aPresses + BCost * bPresses;
                 if (cost < cheapest)
                     cheapest = cost;
             }
@@ -71,7 +75,7 @@ internal class Machine(Coordinate aDeltas, Coordinate bDeltas, Coordinate prizeL
         return cheapest;
     }
 
-    private Coordinate GetClawLocation(int aPresses, int bPresses)
+    private Coordinate GetClawLocation(long aPresses, long bPresses)
     {
         return (aDeltas.x * aPresses + bDeltas.x * bPresses, aDeltas.y * aPresses + bDeltas.y * bPresses);
     }
