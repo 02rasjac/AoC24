@@ -1,4 +1,4 @@
-﻿#define IS_SAMPLE
+﻿// #define IS_SAMPLE
 
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -30,6 +30,7 @@ for (var i = 0; i < data.Length; i++)
 
 Console.WriteLine($"Part 1: {totalCost}");
 // Part 1: 28262
+// Part 2: 101406661266314
 
 return;
 
@@ -47,36 +48,26 @@ internal class Machine(Coordinate aDeltas, Coordinate bDeltas, Coordinate prizeL
 {
     private const int ACost = 3;
     private const int BCost = 1;
-    private const long MaxButtonPresses = 10000000000000;
 
     public long FindCheapestMoveToPrize()
     {
-        var cheapest = long.MaxValue;
-        for (long aPresses = 0; aPresses <= MaxButtonPresses; aPresses++)
-        {
-            for (long bPresses = MaxButtonPresses; bPresses >= 0; bPresses--)
-            {
-                Coordinate location = GetClawLocation(aPresses, bPresses);
-                if (location.x < prizeLocation.x || location.y < prizeLocation.y)
-                    break;
-                if (location.x > prizeLocation.x || location.y > prizeLocation.y)
-                    continue;
+        // See "math.md"
+        long bPresses;
+        long numerator = prizeLocation.x * aDeltas.y - aDeltas.x * prizeLocation.y;
+        long denominator = bDeltas.x * aDeltas.y - aDeltas.x * bDeltas.y;
+        if (numerator % denominator == 0)
+            bPresses = numerator / denominator;
+        else
+            return 0;
 
-                // The price was found
-                long cost = ACost * aPresses + BCost * bPresses;
-                if (cost < cheapest)
-                    cheapest = cost;
-            }
-        }
+        long aPresses;
+        numerator = prizeLocation.y - bPresses * bDeltas.y;
+        denominator = aDeltas.y;
+        if (numerator % denominator == 0)
+            aPresses = numerator / denominator;
+        else
+            return 0;
 
-        if (cheapest == int.MaxValue)
-            cheapest = 0;
-
-        return cheapest;
-    }
-
-    private Coordinate GetClawLocation(long aPresses, long bPresses)
-    {
-        return (aDeltas.x * aPresses + bDeltas.x * bPresses, aDeltas.y * aPresses + bDeltas.y * bPresses);
+        return aPresses * ACost + bPresses * BCost;
     }
 }
