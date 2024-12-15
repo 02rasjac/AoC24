@@ -13,9 +13,10 @@ const int width = 101;
 const int height = 103;
 #endif
 
-const int maxSeconds = 100;
+const int maxSeconds = 100000;
 const int middleX = width / 2;
 const int middleY = height / 2;
+const int checkForNInRow = 5;
 
 string[] data = File.ReadAllLines(path);
 var robots = new Robot[data.Length];
@@ -36,6 +37,13 @@ for (var second = 1; second <= maxSeconds; second++)
     {
         robot.Move(width, height);
     }
+
+    Console.WriteLine($"Second: {second}");
+    if (CheckIfMaybeTree())
+    {
+        PrintMap();
+        Console.WriteLine();
+    }
 }
 
 int quad1 = Count(0, 0, middleX, middleY);
@@ -46,6 +54,7 @@ int quad4 = Count(middleX + 1, middleY + 1, width, height);
 int safetyFactor = quad1 * quad2 * quad3 * quad4;
 Console.WriteLine($"Safety factor: {safetyFactor}");
 // Part 1: 230900224
+// Part 2: 6532
 
 return;
 
@@ -62,6 +71,47 @@ int Count(int startX, int startY, int endX, int endY)
     }
 
     return count;
+}
+
+bool CheckIfMaybeTree()
+{
+    for (var y = 0; y < height; y++)
+    {
+        for (var x = 0; x < width; x++)
+        {
+            var nInRow = 0;
+
+            int count = robots.Count(robot => robot.Position.X == x && robot.Position.Y == y);
+            for (var dx = 0; dx <= checkForNInRow; dx++)
+            {
+                Robot? robot = robots.FirstOrDefault(robot => robot.Position.X == x + dx && robot.Position.Y == y);
+
+                if (robot == null)
+                    break;
+
+                nInRow++;
+            }
+
+            if (nInRow >= checkForNInRow)
+                return true;
+        }
+    }
+
+    return false;
+}
+
+void PrintMap()
+{
+    for (var y = 0; y < height; y++)
+    {
+        for (var x = 0; x < width; x++)
+        {
+            Robot? robot = robots.FirstOrDefault(robot => robot.Position.X == x && robot.Position.Y == y);
+            Console.Write(robot == null ? "." : "O");
+        }
+
+        Console.WriteLine();
+    }
 }
 
 // TODO: A class representing a robot with its position and velocity
