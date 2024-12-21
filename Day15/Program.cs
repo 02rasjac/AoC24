@@ -124,14 +124,14 @@ bool AttemptToMove(Vector2I position, Vector2I direction, char og = '@')
         }
 
         // Check if the box is completely free to move
-        if (map[nextPosition.Y][nextPosition.X] == '.' && map[nextPosition.Y][nextPosition.X + 1] == '.')
+        if (map[nextPosition.Y][nextPosition.X] == '.')
         {
             isBoxPartsMovable[(position.X, position.Y)] = (true, og);
             return true;
         }
 
         // Check if the box can't move due to a wall
-        if (map[nextPosition.Y][nextPosition.X] == '#' || map[nextPosition.Y][nextPosition.X + 1] == '#')
+        if (map[nextPosition.Y][nextPosition.X] == '#')
         {
             isBoxPartsMovable[(position.X, position.Y)] = (false, og);
             return false;
