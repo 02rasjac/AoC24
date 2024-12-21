@@ -1,4 +1,4 @@
-﻿// #define IS_SAMPLE
+﻿#define IS_SAMPLE
 
 using Day15;
 
@@ -10,6 +10,8 @@ const string path = "data.txt";
 
 string[] data = File.ReadAllLines(path);
 List<List<char>> map = [];
+var isBoxPartsMovable = new Dictionary<(int x, int y), (bool canMove, char c)>();
+
 var startOfInstructions = 0;
 var robotPosition = new Vector2I(0, 0);
 
@@ -26,13 +28,25 @@ for (var y = 0; y < data.Length; y++)
     for (var x = 0; x < data[y].Length; x++)
     {
         char c = data[y][x];
-        if (c == '@')
-            robotPosition = new Vector2I(x, y);
-        row.Add(c);
+        switch (c)
+        {
+            case '@':
+                robotPosition = new Vector2I(x * 2, y);
+                row.AddRange('@', '.');
+                break;
+            case 'O':
+                row.AddRange('[', ']');
+                break;
+            default:
+                row.AddRange(c, c);
+                break;
+        }
     }
 
     map.Add(row);
 }
+
+// PrintMap();
 
 // Follow the instructions
 for (int y = startOfInstructions; y < data.Length; y++)
@@ -53,6 +67,10 @@ for (int y = startOfInstructions; y < data.Length; y++)
         {
             robotPosition += direction;
         }
+
+        PrintMap();
+        Console.WriteLine();
+        isBoxPartsMovable.Clear();
     }
 }
 
@@ -74,24 +92,100 @@ Console.WriteLine($"Sum of the boxes GPS coordinates: {totalCoordinate}");
 // Part 1: 1426855
 return;
 
-bool AttemptToMove(Vector2I position, Vector2I direction)
+// TODO: Do checks for moving vertically only from the left part of the box
+// If both nodes next to it is empty => move 
+// If any of them is a wall => don't move
+// If any of them belong to a box, repeat the check from the left part of that box
+//* Store the boxes left index in a dictionary as the key and a boolean if it can move.
+//* Check all boxes that's connected to the first one.
+//* If all boxes can move, do it, otherwise don't do anything
+
+bool AttemptToMove(Vector2I position, Vector2I direction, char og = '@')
 {
     Vector2I nextPosition = position + direction;
     char nextNode = map[nextPosition.Y][nextPosition.X];
     if (nextNode == '#' || direction is { X: 0, Y: 0 })
         return false;
 
-    var canMove = false;
-    if (nextNode == 'O')
+    if (og == '@' && nextNode == '.')
     {
-        canMove = AttemptToMove(nextPosition, direction);
+        map[nextPosition.Y][nextPosition.X] = og;
+        map[position.Y][position.X] = '.';
+        return true;
     }
 
-    if (nextNode != '.' && !canMove) return false;
+    var canMove = false;
+    if (direction.Y != 0)
+    {
+        if (nextNode == ']')
+        {
+            nextPosition.X -= 1;
+            nextNode = '[';
+        }
 
-    map[nextPosition.Y][nextPosition.X] = map[position.Y][position.X];
-    map[position.Y][position.X] = '.';
+        // Check if the box is completely free to move
+        if (map[nextPosition.Y][nextPosition.X] == '.' && map[nextPosition.Y][nextPosition.X + 1] == '.')
+        {
+            isBoxPartsMovable[(position.X, position.Y)] = (true, og);
+            return true;
+        }
 
+        // Check if the box can't move due to a wall
+        if (map[nextPosition.Y][nextPosition.X] == '#' || map[nextPosition.Y][nextPosition.X + 1] == '#')
+        {
+            isBoxPartsMovable[(position.X, position.Y)] = (false, og);
+            return false;
+        }
+
+        if (map[nextPosition.Y][nextPosition.X] is '[' or ']')
+            canMove = AttemptToMove(nextPosition, direction, '[');
+        if (map[nextPosition.Y][nextPosition.X + 1] is '[' or ']')
+            canMove = canMove && AttemptToMove(nextPosition + new Vector2I(1, 0), direction, ']');
+
+        // // Check if the next box can move
+        // canMove = AttemptToMove(nextPosition, direction, '['); // &&
+        // // AttemptToMove(nextPosition + new Vector2I(1, 0), direction, ']');
+
+        if (og != '@')
+        {
+            if (!canMove)
+            {
+                isBoxPartsMovable[(position.X, position.Y)] = (false, og);
+                return false;
+            }
+
+            isBoxPartsMovable[(position.X, position.Y)] = (true, og);
+        }
+        else
+        {
+            if (!canMove)
+                return false;
+
+            foreach (((int x, int y), (bool _, char c)) in isBoxPartsMovable)
+            {
+                map[y + direction.Y][x] = c;
+                map[y][x] = '.';
+            }
+
+            map[position.Y + direction.Y][position.X] = '@';
+            map[position.Y][position.X] = '.';
+            return true;
+        }
+    }
+    else
+    {
+        // Do the checks horizontally
+        if (nextNode is '[' or ']')
+        {
+            canMove = AttemptToMove(nextPosition, direction, nextNode);
+        }
+
+        if (nextNode != '.' && !canMove) return false;
+
+        map[nextPosition.Y][nextPosition.X] = og;
+        map[position.Y][position.X] = '.';
+        return true;
+    }
 
     return true;
 }
