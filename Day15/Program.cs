@@ -1,4 +1,4 @@
-﻿#define IS_SAMPLE
+﻿// #define IS_SAMPLE
 
 using Day15;
 
@@ -68,8 +68,8 @@ for (int y = startOfInstructions; y < data.Length; y++)
             robotPosition += direction;
         }
 
-        PrintMap();
-        Console.WriteLine();
+        // PrintMap();
+        // Console.WriteLine();
         isBoxPartsMovable.Clear();
     }
 }
@@ -82,7 +82,7 @@ for (var y = 0; y < map.Count; y++)
 {
     for (var x = 0; x < map[y].Count; x++)
     {
-        if (map[y][x] != 'O')
+        if (map[y][x] != '[')
             continue;
         totalCoordinate += 100 * y + x;
     }
@@ -90,9 +90,10 @@ for (var y = 0; y < map.Count; y++)
 
 Console.WriteLine($"Sum of the boxes GPS coordinates: {totalCoordinate}");
 // Part 1: 1426855
+// Part 2: 1404917
 return;
 
-// TODO: Do checks for moving vertically only from the left part of the box
+// Do checks for moving vertically only from the left part of the box
 // If both nodes next to it is empty => move 
 // If any of them is a wall => don't move
 // If any of them belong to a box, repeat the check from the left part of that box
@@ -141,10 +142,6 @@ bool AttemptToMove(Vector2I position, Vector2I direction, char og = '@')
             canMove = AttemptToMove(nextPosition, direction, '[');
         if (map[nextPosition.Y][nextPosition.X + 1] is '[' or ']')
             canMove = canMove && AttemptToMove(nextPosition + new Vector2I(1, 0), direction, ']');
-
-        // // Check if the next box can move
-        // canMove = AttemptToMove(nextPosition, direction, '['); // &&
-        // // AttemptToMove(nextPosition + new Vector2I(1, 0), direction, ']');
 
         if (og != '@')
         {
