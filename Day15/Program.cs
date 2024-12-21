@@ -68,8 +68,6 @@ for (int y = startOfInstructions; y < data.Length; y++)
             robotPosition += direction;
         }
 
-        // PrintMap();
-        // Console.WriteLine();
         isBoxPartsMovable.Clear();
     }
 }
@@ -116,26 +114,20 @@ bool AttemptToMove(Vector2I position, Vector2I direction, char og = '@')
     }
 
     var canMove = false;
+    // Do the checks vertically
     if (direction.Y != 0)
     {
         if (nextNode == ']')
-        {
             nextPosition.X -= 1;
-            nextNode = '[';
-        }
 
-        // Check if the box is completely free to move
-        if (map[nextPosition.Y][nextPosition.X] == '.')
+        switch (map[nextPosition.Y][nextPosition.X])
         {
-            isBoxPartsMovable[(position.X, position.Y)] = (true, og);
-            return true;
-        }
-
-        // Check if the box can't move due to a wall
-        if (map[nextPosition.Y][nextPosition.X] == '#')
-        {
-            isBoxPartsMovable[(position.X, position.Y)] = (false, og);
-            return false;
+            case '.':
+                isBoxPartsMovable[(position.X, position.Y)] = (true, og);
+                return true;
+            case '#':
+                isBoxPartsMovable[(position.X, position.Y)] = (false, og);
+                return false;
         }
 
         if (map[nextPosition.Y][nextPosition.X] is '[' or ']')
@@ -152,38 +144,35 @@ bool AttemptToMove(Vector2I position, Vector2I direction, char og = '@')
             }
 
             isBoxPartsMovable[(position.X, position.Y)] = (true, og);
-        }
-        else
-        {
-            if (!canMove)
-                return false;
-
-            foreach (((int x, int y), (bool _, char c)) in isBoxPartsMovable)
-            {
-                map[y + direction.Y][x] = c;
-                map[y][x] = '.';
-            }
-
-            map[position.Y + direction.Y][position.X] = '@';
-            map[position.Y][position.X] = '.';
             return true;
         }
-    }
-    else
-    {
-        // Do the checks horizontally
-        if (nextNode is '[' or ']')
+
+        // Only the original call to `AttemptToMove` with `og == '@'` should come here.
+        if (!canMove)
+            return false;
+
+        // Move all the boxes and robot 
+        foreach (((int x, int y), (bool _, char c)) in isBoxPartsMovable)
         {
-            canMove = AttemptToMove(nextPosition, direction, nextNode);
+            map[y + direction.Y][x] = c;
+            map[y][x] = '.';
         }
 
-        if (nextNode != '.' && !canMove) return false;
-
-        map[nextPosition.Y][nextPosition.X] = og;
+        map[position.Y + direction.Y][position.X] = '@';
         map[position.Y][position.X] = '.';
         return true;
     }
 
+    // Do the checks horizontally
+    if (nextNode is '[' or ']')
+    {
+        canMove = AttemptToMove(nextPosition, direction, nextNode);
+    }
+
+    if (nextNode != '.' && !canMove) return false;
+
+    map[nextPosition.Y][nextPosition.X] = og;
+    map[position.Y][position.X] = '.';
     return true;
 }
 
